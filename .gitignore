@@ -102,3 +102,6 @@ venv.bak/
 
 # mypy
 .mypy_cache/
+
+# Expression graph extension generated outputs
+math_expr/extension_outputs/

@@ -9,6 +9,11 @@ from os import PathLike
 from pathlib import Path
 from typing import Any, Iterator
 
+
+DEFAULT_MPL_CONFIG_DIR = Path(tempfile.gettempdir()) / "math_expr_matplotlib"
+DEFAULT_MPL_CONFIG_DIR.mkdir(parents=True, exist_ok=True)
+os.environ.setdefault("MPLCONFIGDIR", str(DEFAULT_MPL_CONFIG_DIR))
+
 try:
     from math_expr.executor import execute as original_execute
 except ImportError:  # pragma: no cover - supports running from inside math_expr/
@@ -90,12 +95,20 @@ def _original_executor_workspace(graph_file: Path) -> Iterator[str]:
     with tempfile.TemporaryDirectory(prefix="executor_adapter_") as workspace:
         workspace_path = Path(workspace)
         graphs_dir = workspace_path / "graphs"
+        mpl_config_dir = workspace_path / "matplotlib"
         graphs_dir.mkdir(parents=True)
+        mpl_config_dir.mkdir(parents=True)
         shutil.copy2(graph_file, graphs_dir / graph_file.name)
 
         previous_cwd = Path.cwd()
+        previous_mpl_config_dir = os.environ.get("MPLCONFIGDIR")
         try:
             os.chdir(workspace_path)
+            os.environ["MPLCONFIGDIR"] = str(mpl_config_dir)
             yield graph_file.stem
         finally:
             os.chdir(previous_cwd)
+            if previous_mpl_config_dir is None:
+                os.environ.pop("MPLCONFIGDIR", None)
+            else:
+                os.environ["MPLCONFIGDIR"] = previous_mpl_config_dir
